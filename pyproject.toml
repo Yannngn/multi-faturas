@@ -1,0 +1,22 @@
+[project]
+name = "multi-faturas"
+version = "0.1.0"
+description = """
+This project is designed to extract data from multiple PDF invoices and compile it into a single csv file. It utilizes the pdfplumber library to read and parse the PDF files, and pandas to organize and export the data into an csv format. The main goal is to streamline the process of handling multiple invoices, making it easier for users to manage their financial records.
+
+O multi-faturas é um projeto em Python projetado para automatizar sua gestão financeira. Ele consome faturas em PDF de múltiplas instituições bancárias, extrai dados e converte tudo para o formato CSV. Além disso, a ferramenta consolida todas as despesas em um único histórico de transações unificado, facilitando a análise minuciosa de gastos.
+"""
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=3.0.1",
+    "pdfplumber>=0.11.9",
+    "python-dotenv>=1.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.2",
+    "ty>=0.0.18",
+]

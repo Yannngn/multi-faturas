@@ -1,0 +1,21 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: Run ruff check --fix via uv
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+        pass_filenames: true
+      - id: ruff-format
+        name: Format with ruff via uv
+        entry: uv run ruff format
+        language: system
+        types: [python]
+        pass_filenames: true
+      - id: ty
+        name: Run ty type checker via uv
+        entry: uv run ty check .
+        language: system
+        types: [python]
+        pass_filenames: false # Ty typically checks the whole project
