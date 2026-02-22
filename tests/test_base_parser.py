@@ -29,7 +29,7 @@ class TestRequiredColumns:
 class TestBaseParserInstantiation:
     def test_cannot_instantiate_abstract_class(self):
         with pytest.raises(TypeError):
-            BaseParser("some/path.pdf")  # type: ignore[abstract]
+            BaseParser("some/path.pdf")
 
     def test_concrete_parser_instantiates(self):
         parser = ConcreteParser("some/path.pdf")

@@ -14,25 +14,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          uv sync
 
-      - name: Lint with flake8
+      - name: Lint with ruff
         run: |
-          # Stop the build if there are Python syntax errors or undefined names
-          flake8 src tests --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Treat all remaining issues as warnings (does not fail the build)
-          flake8 src tests --count --exit-zero --max-line-length=100 --statistics
+          uv run ruff check src tests
+
+      - name: Type check with ty
+        run: |
+          uv run ty check src tests
 
       - name: Run tests with pytest
         run: |
-          pytest tests/ -v
+          uv run pytest tests/ -v
