@@ -15,9 +15,7 @@ class DataMerger:
     """Merges parsed DataFrames and writes a single consolidated CSV.
 
     Args:
-        output_dir: Directory where the output CSV will be saved.
-        output_filename: Name of the CSV file (default:
-            ``"faturas_consolidadas.csv"``).
+        output_dir: Directory where consolidated and per-bank outputs are saved.
 
     Example::
 
@@ -28,13 +26,11 @@ class DataMerger:
     def __init__(
         self,
         output_dir: str | os.PathLike,
-        output_filename: str = "faturas_consolidadas.csv",
     ) -> None:
         self.output_dir = Path(output_dir)
-        self.output_filename = output_filename
 
     def consolidate(self, frames: list[pd.DataFrame]) -> Path | None:
-        """Merge *frames*, sort by date, and write to CSV.
+        """Merge *frames*, sort by date, and write to CSVs.
 
         Args:
             frames: List of DataFrames returned by :class:`~extractor.Extractor`.
@@ -69,7 +65,9 @@ class DataMerger:
                 combined.drop(columns=["_sort_date"], inplace=True)
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = self.output_dir / self.output_filename
+
+        period_label = self._format_period_from_series(combined["Data"])
+        output_path = self.output_dir / f"faturas_consolidadas_{period_label}.csv"
 
         combined.to_csv(output_path, index=False, encoding="utf-8-sig")
         logger.info(
@@ -78,4 +76,63 @@ class DataMerger:
             output_path,
         )
 
+        self._write_per_bank_outputs(frames)
+
         return output_path
+
+    def _write_per_bank_outputs(self, frames: list[pd.DataFrame]) -> None:
+        counters: dict[tuple[str, str], int] = {}
+
+        for frame in frames:
+            bank_id = str(frame.attrs.get("bank_id", "unknown")).lower()
+            bank_dir = self.output_dir / bank_id
+            bank_dir.mkdir(parents=True, exist_ok=True)
+
+            period_label = self._format_period_from_series(frame["Data"])
+            card_last = frame.attrs.get("card_last_digits")
+
+            if not card_last:
+                key = (bank_id, period_label)
+                counters[key] = counters.get(key, 0) + 1
+                card_last = str(counters[key])
+
+            filename = f"fatura_{bank_id}_{card_last}_{period_label}.csv"
+            output_path = bank_dir / filename
+            frame.to_csv(output_path, index=False, encoding="utf-8-sig")
+
+    @staticmethod
+    def _format_period_from_series(series: pd.Series) -> str:
+        dates = pd.to_datetime(series, format="%d/%m/%Y", errors="coerce")
+        dates = dates.dropna()
+        if dates.empty:
+            return "periodo-indefinido"
+
+        start = dates.min()
+        end = dates.max()
+        return DataMerger._format_period(start, end)
+
+    @staticmethod
+    def _format_period(start: pd.Timestamp, end: pd.Timestamp) -> str:
+        start_label = DataMerger._format_month_year(start)
+        end_label = DataMerger._format_month_year(end)
+        if start_label == end_label:
+            return start_label
+        return f"{start_label}_{end_label}"
+
+    @staticmethod
+    def _format_month_year(date: pd.Timestamp) -> str:
+        months = {
+            1: "jan",
+            2: "fev",
+            3: "mar",
+            4: "abr",
+            5: "mai",
+            6: "jun",
+            7: "jul",
+            8: "ago",
+            9: "set",
+            10: "out",
+            11: "nov",
+            12: "dez",
+        }
+        return f"{months[date.month]}-{date.year}"

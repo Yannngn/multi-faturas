@@ -35,30 +35,33 @@ class FailingParser(BaseParser):
 
 
 @pytest.fixture
-def input_dir(tmp_path):
-    return tmp_path / "input"
+def root_dir(tmp_path):
+    return tmp_path
 
 
 class TestExtractorNoPdfs:
-    def test_returns_empty_list_when_no_pdfs(self, input_dir):
-        input_dir.mkdir()
-        extractor = Extractor(input_dir=input_dir, parser_registry={})
+    def test_returns_empty_list_when_no_pdfs(self, root_dir):
+        extractor = Extractor(root_dir=root_dir, parser_registry={})
         assert extractor.extract_all() == []
 
 
 class TestExtractorResolvesParser:
-    def test_unknown_file_is_skipped(self, input_dir):
-        input_dir.mkdir()
-        (input_dir / "unknown_bank_statement.pdf").touch()
+    def test_unknown_file_is_skipped(self, root_dir):
+        unknown_dir = root_dir / "unknown"
+        unknown_dir.mkdir()
+        (unknown_dir / "statement.pdf").touch()
         extractor = Extractor(
-            input_dir=input_dir, parser_registry={"fakebank": FakeParser}
+            root_dir=root_dir,
+            parser_registry={"fake": FakeParser},
+            bank_aliases={"fake": "fake"},
         )
         frames = extractor.extract_all()
         assert frames == []
 
-    def test_known_file_is_parsed(self, input_dir):
-        input_dir.mkdir()
-        pdf_path = input_dir / "fakebank_jan2024.pdf"
+    def test_known_file_is_parsed(self, root_dir):
+        bank_dir = root_dir / "Fake_Bank"
+        bank_dir.mkdir()
+        pdf_path = bank_dir / "jan2024.pdf"
         pdf_path.touch()
 
         with patch.object(
@@ -78,19 +81,24 @@ class TestExtractorResolvesParser:
             ),
         ):
             extractor = Extractor(
-                input_dir=input_dir, parser_registry={"fakebank": FakeParser}
+                root_dir=root_dir,
+                parser_registry={"fake": FakeParser},
+                bank_aliases={"fake_bank": "fake"},
             )
             frames = extractor.extract_all()
 
         assert len(frames) == 1
         assert len(frames[0]) == 1
 
-    def test_failing_parser_is_logged_and_skipped(self, input_dir, caplog):
-        input_dir.mkdir()
-        pdf_path = input_dir / "failbank_jan2024.pdf"
+    def test_failing_parser_is_logged_and_skipped(self, root_dir, caplog):
+        bank_dir = root_dir / "FailBank"
+        bank_dir.mkdir()
+        pdf_path = bank_dir / "jan2024.pdf"
         pdf_path.touch()
         extractor = Extractor(
-            input_dir=input_dir, parser_registry={"failbank": FailingParser}
+            root_dir=root_dir,
+            parser_registry={"fail": FailingParser},
+            bank_aliases={"failbank": "fail"},
         )
         frames = extractor.extract_all()
         assert frames == []

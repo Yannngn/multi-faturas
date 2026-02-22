@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class TemplateBankParser(BaseParser):
-    """Example parser – replace with real extraction logic for your bank."""
+    """Example parser - replace with real extraction logic for your bank."""
 
     bank_name = "Template Bank"
 
@@ -40,11 +40,16 @@ class TemplateBankParser(BaseParser):
             ValueError: If no transactions could be extracted.
         """
         rows: list[dict] = []
+        card_last_digits: str | None = None
 
         logger.info("Parsing '%s' with %s.", self.source_path, self.__class__.__name__)
 
         with self._open_pdf() as pdf:
             for page_num, page in enumerate(pdf.pages, start=1):
+                if card_last_digits is None:
+                    text = page.extract_text() or ""
+                    card_last_digits = self._extract_card_last_digits(text)
+
                 tables = page.extract_tables()
                 for table in tables:
                     for row in table:
@@ -65,7 +70,10 @@ class TemplateBankParser(BaseParser):
             )
 
         df = pd.DataFrame(rows)
-        return self._validate_dataframe(df)
+        df = self._validate_dataframe(df)
+        if card_last_digits:
+            df.attrs["card_last_digits"] = card_last_digits
+        return df
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -122,13 +130,15 @@ class TemplateBankParser(BaseParser):
                 return pdfplumber.open(self.source_path, password=password)
             except FileNotFoundError:
                 raise
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 last_exc = exc
 
         if last_exc is not None:
             raise last_exc
 
-        return pdfplumber.open(self.source_path)
+        # This point is unreachable since passwords always contains at least None,
+        # but satisfies the type checker that we always return or raise.
+        raise RuntimeError("No password attempts were made")  # pragma: no cover
 
     @staticmethod
     def _cpf_password_candidates() -> list[str]:
@@ -178,3 +188,15 @@ class TemplateBankParser(BaseParser):
         # Convert from BRL format (1.234,56) to float format (1234.56)
         cleaned = cleaned.replace(".", "").replace(",", ".")
         return float(cleaned)
+
+    @staticmethod
+    def _extract_card_last_digits(text: str) -> str | None:
+        patterns = [
+            r"(?:\*{2,}|x{2,}|X{2,})\s*(\d{4})",
+            r"(?:final|ultimos|\u00faltimos)\s*(\d{4})",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text, flags=re.IGNORECASE)
+            if match:
+                return match.group(1)
+        return None

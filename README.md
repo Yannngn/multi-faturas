@@ -41,18 +41,33 @@ multi-faturas/
 ## Instalação
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ## Uso
 
 ```bash
-# Coloque os PDFs em data/input/ e execute:
-python -m src.main
+# Estrutura esperada:
+# root/
+#   BB/
+#     fatura_*.pdf
+#   Itau/
+#     fatura_*.pdf
+#   output/
 
-# Opções:
-python -m src.main --input caminho/para/pdfs --output caminho/saida --filename relatorio.csv
+# O nome da pasta pode variar (ex.: BB, banco_do_brasil, BancoDoBrasil).
+# Ele sera normalizado para o id canonico do banco (bb, nubank, itau, etc).
+
+uv run src.main --root caminho/para/root
 ```
+
+## Saidas
+
+- Consolidado (todos os bancos): `output/faturas_consolidadas_<inicio>_<fim>.csv`
+- Por banco: `output/<BANCO>/fatura_<banco>_<cartao>_<periodo>.csv`
+
+Os periodos usam abreviacao de mes em PT-BR (ex.: `jan-2024`, `fev-2024`).
+Se o numero do cartao nao for encontrado no PDF, o nome usa um contador por banco/periodo.
 
 ## Senha de PDF (CPF)
 
@@ -64,6 +79,10 @@ CPF=12345678900
 ```
 
 O parser tenta, nesta ordem: 6 primeiros digitos, 5 primeiros digitos e o CPF completo.
+
+## Variaveis de ambiente
+
+- ROOT_DATA_DIR: diretório raiz com as pastas dos bancos (default: .)
 
 ## Adicionando um novo banco
 

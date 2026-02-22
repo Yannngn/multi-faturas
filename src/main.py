@@ -2,15 +2,12 @@
 
 Usage::
 
-    python -m src.main --input data/input --output data/output
-
-    # Specify a custom output file name:
-    python -m src.main --input data/input --output data/output \\
-        --filename meu_relatorio.csv
+    python -m src.main --root data
 """
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -39,6 +36,25 @@ PARSER_REGISTRY = {
     "templatebank": TemplateBankParser,
     # "nubank": NubankParser,
     # "itau": ItauParser,
+    # "bb": BancoDoBrasilParser,
+}
+
+BANK_ALIASES = {
+    "templatebank": "templatebank",
+    "bb": "bb",
+    "bancobrasil": "bb",
+    "nubank": "nubank",
+    "itau": "itau",
+    "bradesco": "bradesco",
+    "bancobradesco": "bradesco",
+    "inter": "inter",
+    "c6": "c6",
+    "c6bank": "c6",
+    "santander": "santander",
+    "caixa": "caixa",
+    "caixa_economica": "caixa",
+    "sicoob": "sicoob",
+    "sicredi": "sicredi",
 }
 
 
@@ -54,25 +70,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
         description="Extract and consolidate bank statements from PDFs into a CSV.",
     )
     parser.add_argument(
-        "--input",
-        "-i",
+        "--root",
+        "-r",
         type=Path,
-        default=Path("data/input"),
-        help="Directory containing PDF statements (default: data/input).",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        type=Path,
-        default=Path("data/output"),
-        help="Directory where the consolidated CSV will be saved (default: data/output).",
-    )
-    parser.add_argument(
-        "--filename",
-        "-f",
-        type=str,
-        default="faturas_consolidadas.csv",
-        help="Output CSV file name (default: faturas_consolidadas.csv).",
+        default=Path(os.getenv("ROOT_DATA_DIR", ".")),
+        help="Root directory with bank folders (default: ROOT_DATA_DIR or .).",
     )
     return parser
 
@@ -90,20 +92,22 @@ def main(argv: list[str] | None = None) -> int:
     args = build_arg_parser().parse_args(argv)
 
     logger.info("Starting multi-faturas pipeline.")
-    logger.info("Input directory : %s", args.input)
-    logger.info("Output directory: %s", args.output)
+    logger.info("Root directory  : %s", args.root)
+
+    input_root = args.root
+    output_root = args.root / "output"
 
     # --- Extract ---
     extractor = Extractor(
-        input_dir=args.input,
+        root_dir=input_root,
         parser_registry=PARSER_REGISTRY,
+        bank_aliases=BANK_ALIASES,
     )
     frames = extractor.extract_all()
 
     # --- Consolidate & Export ---
     merger = DataMerger(
-        output_dir=args.output,
-        output_filename=args.filename,
+        output_dir=output_root,
     )
     output_path = merger.consolidate(frames)
 
