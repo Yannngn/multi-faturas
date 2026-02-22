@@ -6,6 +6,7 @@ transactions from the bank's specific PDF layout.
 """
 
 import logging
+import os
 import re
 from datetime import datetime
 
@@ -42,7 +43,7 @@ class TemplateBankParser(BaseParser):
 
         logger.info("Parsing '%s' with %s.", self.source_path, self.__class__.__name__)
 
-        with pdfplumber.open(self.source_path) as pdf:
+        with self._open_pdf() as pdf:
             for page_num, page in enumerate(pdf.pages, start=1):
                 tables = page.extract_tables()
                 for table in tables:
@@ -60,8 +61,7 @@ class TemplateBankParser(BaseParser):
 
         if not rows:
             raise ValueError(
-                f"No transactions found in '{self.source_path}'. "
-                "The PDF layout may not match this parser."
+                f"No transactions found in '{self.source_path}'. The PDF layout may not match this parser."
             )
 
         df = pd.DataFrame(rows)
@@ -103,13 +103,54 @@ class TemplateBankParser(BaseParser):
             logger.debug("Could not parse value '%s', skipping row.", raw_value)
             return None
 
+        description = str(raw_description).strip() if raw_description else ""
+
         return {
             "Data": date_str,
             "Banco/Origem": self.bank_name,
-            "Descrição da Transação": str(raw_description).strip(),
+            "Descrição da Transação": description,
             "Valor": value,
             "Categoria": "",
         }
+
+    def _open_pdf(self) -> pdfplumber.PDF:
+        passwords = [None, *self._cpf_password_candidates()]
+        last_exc: Exception | None = None
+
+        for password in passwords:
+            try:
+                return pdfplumber.open(self.source_path, password=password)
+            except FileNotFoundError:
+                raise
+            except Exception as exc:  # noqa: BLE001
+                last_exc = exc
+
+        if last_exc is not None:
+            raise last_exc
+
+        return pdfplumber.open(self.source_path)
+
+    @staticmethod
+    def _cpf_password_candidates() -> list[str]:
+        raw_cpf = os.getenv("CPF", "").strip()
+        digits = re.sub(r"\D", "", raw_cpf)
+        if not digits:
+            return []
+
+        candidates: list[str] = []
+        for length in (6, 5):
+            if len(digits) >= length:
+                candidates.append(digits[:length])
+
+        if digits not in candidates:
+            candidates.append(digits)
+
+        # Preserve order while removing duplicates.
+        unique: list[str] = []
+        for candidate in candidates:
+            if candidate not in unique:
+                unique.append(candidate)
+        return unique
 
     @staticmethod
     def _parse_brl_value(raw: str) -> float:
@@ -131,11 +172,7 @@ class TemplateBankParser(BaseParser):
             ValueError: If the string cannot be converted.
         """
         # Strip currency symbols, non-breaking spaces, and whitespace
-        cleaned = (
-            raw.replace("R$", "")
-            .replace("\xa0", "")
-            .strip()
-        )
+        cleaned = raw.replace("R$", "").replace("\xa0", "").strip()
         # Remove any remaining alphabetic characters (e.g. lone "R")
         cleaned = re.sub(r"[A-Za-z\s]", "", cleaned)
         # Convert from BRL format (1.234,56) to float format (1234.56)

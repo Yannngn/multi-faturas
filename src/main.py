@@ -14,6 +14,8 @@ import logging
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from .extractor import Extractor
 from .merger import DataMerger
 from .parsers.template_bank_parser import TemplateBankParser
@@ -84,6 +86,7 @@ def main(argv: list[str] | None = None) -> int:
     Returns:
         ``0`` on success, ``1`` on failure.
     """
+    load_dotenv()
     args = build_arg_parser().parse_args(argv)
 
     logger.info("Starting multi-faturas pipeline.")

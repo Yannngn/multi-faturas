@@ -80,9 +80,7 @@ class Extractor:
             except FileNotFoundError:
                 logger.error("File not found: '%s'.", pdf_path)
             except PermissionError:
-                logger.error(
-                    "Cannot open '%s': file may be password-protected.", pdf_path.name
-                )
+                logger.error("Cannot open '%s': permission denied.", pdf_path.name)
             except ValueError as exc:
                 logger.error("Failed to parse '%s': %s", pdf_path.name, exc)
             except Exception as exc:  # noqa: BLE001

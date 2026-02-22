@@ -59,12 +59,14 @@ class DataMerger:
         # Sort by date ascending (parse DD/MM/YYYY for sorting only)
         try:
             combined["_sort_date"] = pd.to_datetime(
-                combined["Data"], format="%d/%m/%Y", dayfirst=True, errors="coerce"
+                combined["Data"], format="%d/%m/%Y", errors="coerce"
             )
             combined.sort_values("_sort_date", inplace=True, ignore_index=True)
-            combined.drop(columns=["_sort_date"], inplace=True)
         except Exception as exc:  # noqa: BLE001
             logger.warning("Could not sort by date: %s", exc)
+        finally:
+            if "_sort_date" in combined.columns:
+                combined.drop(columns=["_sort_date"], inplace=True)
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
         output_path = self.output_dir / self.output_filename

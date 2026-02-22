@@ -54,6 +54,17 @@ python -m src.main
 python -m src.main --input caminho/para/pdfs --output caminho/saida --filename relatorio.csv
 ```
 
+## Senha de PDF (CPF)
+
+Alguns PDFs de bancos usam o CPF como senha. Para tentar desbloquear automaticamente,
+crie um arquivo `.env` na raiz com:
+
+```bash
+CPF=12345678900
+```
+
+O parser tenta, nesta ordem: 6 primeiros digitos, 5 primeiros digitos e o CPF completo.
+
 ## Adicionando um novo banco
 
 1. Copie `src/parsers/template_bank_parser.py` para `src/parsers/meu_banco_parser.py`.

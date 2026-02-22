@@ -59,7 +59,7 @@ class TestValidateDataFrame:
         df = pd.DataFrame({"Data": ["01/01/2024"]})
         validated = parser._validate_dataframe(df)
         assert list(validated.columns) == REQUIRED_COLUMNS
-        assert validated["Valor"].iloc[0] is None
+        assert pd.isna(validated["Valor"].iloc[0])
 
     def test_reorders_extra_columns(self):
         parser = ConcreteParser("some/path.pdf")
