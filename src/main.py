@@ -14,8 +14,8 @@ import logging
 import sys
 from pathlib import Path
 
-from .consolidator import Consolidator
 from .extractor import Extractor
+from .merger import DataMerger
 from .parsers.template_bank_parser import TemplateBankParser
 
 # ---------------------------------------------------------------------------
@@ -98,11 +98,11 @@ def main(argv: list[str] | None = None) -> int:
     frames = extractor.extract_all()
 
     # --- Consolidate & Export ---
-    consolidator = Consolidator(
+    merger = DataMerger(
         output_dir=args.output,
         output_filename=args.filename,
     )
-    output_path = consolidator.consolidate(frames)
+    output_path = merger.consolidate(frames)
 
     if output_path is None:
         logger.warning("Pipeline finished with no output produced.")

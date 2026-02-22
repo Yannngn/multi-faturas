@@ -17,7 +17,7 @@ multi-faturas/
 │   │   ├── __init__.py
 │   │   ├── base_parser.py           # Classe abstrata (Strategy)
 │   │   └── template_bank_parser.py  # Exemplo de implementação
-│   └── consolidator.py      # Mescla os dados e exporta para CSV
+│   └── merger.py      # Mescla os dados e exporta para CSV
 ├── tests/
 ├── data/
 │   ├── input/   # Coloque aqui os PDFs (ignorado no git)

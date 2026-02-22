@@ -11,7 +11,7 @@ from .parsers.base_parser import REQUIRED_COLUMNS
 logger = logging.getLogger(__name__)
 
 
-class Consolidator:
+class DataMerger:
     """Merges parsed DataFrames and writes a single consolidated CSV.
 
     Args:
@@ -21,8 +21,8 @@ class Consolidator:
 
     Example::
 
-        consolidator = Consolidator(output_dir="data/output")
-        consolidator.consolidate(frames)
+        merger = DataMerger(output_dir="data/output")
+        merger.consolidate(frames)
     """
 
     def __init__(

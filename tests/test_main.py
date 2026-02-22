@@ -1,7 +1,7 @@
 """Unit tests for the main CLI entry point."""
 
-from unittest.mock import MagicMock, patch
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from src.main import build_arg_parser, main
 
@@ -34,9 +34,9 @@ class TestMain:
         fake_path = tmp_path / "out.csv"
         with (
             patch("src.main.Extractor") as MockExtractor,
-            patch("src.main.Consolidator") as MockConsolidator,
+            patch("src.main.DataMerger") as MockDataMerger,
         ):
             MockExtractor.return_value.extract_all.return_value = [MagicMock()]
-            MockConsolidator.return_value.consolidate.return_value = fake_path
+            MockDataMerger.return_value.consolidate.return_value = fake_path
             result = main(["--input", str(tmp_path), "--output", str(tmp_path)])
         assert result == 0
