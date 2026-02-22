@@ -7,7 +7,7 @@ O objetivo final é gerar um único arquivo CSV padronizado, otimizado para impo
 
 ## Estrutura do projeto
 
-```
+```bash
 multi-faturas/
 ├── src/
 │   ├── __init__.py
@@ -93,7 +93,7 @@ O parser tenta, nesta ordem: 6 primeiros digitos, 5 primeiros digitos e o CPF co
 ## Testes
 
 ```bash
-pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 ## CI/CD

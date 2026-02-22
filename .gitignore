@@ -1,6 +1,6 @@
 # Data directories – ignore all content except the placeholder
-data/input/*
-!data/input/.gitkeep
+data/bb/*
+!data/bb/.gitkeep
 data/output/*
 !data/output/.gitkeep
 
