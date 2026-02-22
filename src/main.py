@@ -11,10 +11,12 @@ import os
 import sys
 from pathlib import Path
 
+import pandas as pd
 from dotenv import load_dotenv
 
 from .extractor import Extractor
 from .merger import DataMerger
+from .parsers.base_parser import BaseParser
 from .parsers.template_bank_parser import TemplateBankParser
 
 # ---------------------------------------------------------------------------
@@ -57,6 +59,7 @@ BANK_ALIASES = {
     "sicredi": "sicredi",
 }
 
+load_dotenv()  # Load environment variables from .env file if file is present
 
 # ---------------------------------------------------------------------------
 # CLI
@@ -79,6 +82,38 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _make_fallback_parser(canonical_key: str) -> type[BaseParser]:
+    class FallbackParser(BaseParser):
+        bank_name = f"Unknown ({canonical_key})"
+
+        def parse(self) -> pd.DataFrame:
+            raise ValueError(
+                f"No parser registered for bank '{canonical_key}'. Register a parser in PARSER_REGISTRY."
+            )
+
+    return FallbackParser
+
+
+def validate_parsers_on_startup(
+    parser_registry: dict[str, type[BaseParser]],
+    bank_aliases: dict[str, str],
+) -> dict[str, type[BaseParser]]:
+    missing = sorted(
+        {
+            canonical
+            for canonical in bank_aliases.values()
+            if canonical not in parser_registry
+        }
+    )
+    if not missing:
+        return parser_registry
+
+    for canonical in missing:
+        parser_registry[canonical] = _make_fallback_parser(canonical)
+
+    return parser_registry
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the full ETL pipeline and return an exit code.
 
@@ -98,9 +133,10 @@ def main(argv: list[str] | None = None) -> int:
     output_root = args.root / "output"
 
     # --- Extract ---
+    parser_registry = validate_parsers_on_startup(PARSER_REGISTRY, BANK_ALIASES)
     extractor = Extractor(
         root_dir=input_root,
-        parser_registry=PARSER_REGISTRY,
+        parser_registry=parser_registry,
         bank_aliases=BANK_ALIASES,
     )
     frames = extractor.extract_all()

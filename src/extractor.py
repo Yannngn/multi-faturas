@@ -7,6 +7,7 @@ directory and delegating parsing to the appropriate concrete
 
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Type
 
@@ -130,8 +131,7 @@ class Extractor:
     @staticmethod
     def _normalize_bank_key(name: str) -> str:
         normalized = name.lower()
-        for token in (" do ", " da ", " de ", " dos ", " das "):
-            normalized = normalized.replace(token, " ")
+        normalized = re.sub(r"\b(do|da|de|dos|das)\b", " ", normalized)
         parts: list[str] = []
         current = []
         for ch in normalized:
