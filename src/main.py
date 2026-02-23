@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 
 from .extractor import Extractor
 from .merger import DataMerger
+from .parsers.banco_brasil_parser import BancoBrasilParser
 from .parsers.base_parser import BaseParser
 from .parsers.template_bank_parser import TemplateBankParser
 
@@ -36,9 +37,9 @@ logger = logging.getLogger(__name__)
 
 PARSER_REGISTRY = {
     "templatebank": TemplateBankParser,
+    "bb": BancoBrasilParser,
     # "nubank": NubankParser,
     # "itau": ItauParser,
-    # "bb": BancoDoBrasilParser,
 }
 
 BANK_ALIASES = {
